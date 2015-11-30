@@ -5,7 +5,7 @@ function outdata = deevGetEmerDep(cfg)
 % input:
 %   cfg: config struct with optional fields
 %        c: number of forced choice elements
-%        filefiltstr: regexp filter on file listing, default is 'EntAssoc_*_Sub[0-9]{1,2}\.txt'
+%        filefiltstr: regexp filter on file listing, default is 'deev_36events_Sub[0-9]{1,2}\.txt'
 %        badsubs: subject numbers to exclude from analysis
 %        dir: struct containing the logs (def: logfiles)  
 %        doplots: do plots or not (def 0)
