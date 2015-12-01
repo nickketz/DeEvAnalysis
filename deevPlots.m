@@ -40,9 +40,15 @@ if length(size(in.dep))==6
         blkstr = num2str(cfg.blk);
     end
     
+else %not in blocks
+    avgdep = in.avgdep;
+    avgdepdif = in.avgdepdif;
+    oProb = in.oProb;
+    cProb = in.cProb;
+    probDO = in.probDO;
 end
     
-nsubs = size(in.logdata.data.Subj,2);
+nsubs = length(in.logdata.lognames);
 
 if cfg.ci
     crit = tinv(.975,nsubs-1);
@@ -58,7 +64,7 @@ mycolors = get(gca,'defaultAxesColorOrder');
 errorbar_groups(mean(avgdep,3)',crit*ste(avgdep,3)','bar_names',{'OpenLoop','ClosedLoop'},'bar_colors',mycolors,'FigID',h,...
     'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
 legend(barstr,'location','best');
-title('Dependency frm log');
+title('Dependency');
 ylim([min(min(mean(avgdep,3)))-.1 1]);
 set(gca,'fontsize',20);
 
@@ -89,7 +95,8 @@ if size(avgdep,3)>1
         mymin = min([mymin min(tmp)]);
     end
     legend(myconds,'fontsize',18,'location','southwest');
-    for ilcond = 1:2,       ylim(a(ilcond),[mymin 1]);      end
+    mymin = min(avgdep(:)); mymax = max(avgdep(:));
+    for ilcond = 1:2,       ylim(a(ilcond),[mymin mymax]);      end
 end
 
 
