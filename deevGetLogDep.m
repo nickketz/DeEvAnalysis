@@ -129,6 +129,13 @@ altcProb = nanmean(res(1+nEvts/2:nEvts,:,:),1);
 altcProb = reshape(altcProb,4,4,nsubs);
 altcProb = permute(altcProb,[2 1 3]);
 
+depdif = nan(size(avgdep,3),size(avgdep,2)-1,size(avgdep,1));
+for icond = 1:size(avgdep,1)
+    for idif = 2:size(avgdep,2)
+        depdif(:,idif-1,icond) = avgdep(icond,1,:)-avgdep(icond,idif,:);
+    end
+end
+
 substr = strcat(repmat({'sub'},1,nsubs),strtrim(cellstr(num2str(out.data.Subj(1,:)'))'));
 
 outdata.logdata = out;
@@ -144,6 +151,10 @@ outdata.depDO = {{'openLoop','closedLoopObj','closedLoopAni'}, {'data','indp','d
 
 outdata.avgdep = avgdep;
 outdata.avgdepDO = {{'openLoop','closedLoop'}, {'data','indp','dpnd','dpndg'}, substr};
+
+outdata.avgdepdif = depdif;
+outdata.avgdepdifDO = {substr,{'dIndp','dDep','dDepG'},{'openLoop','closedLoop'}};
+
 
 outdata.res = res;
 eles = {'loc','per','obj','ani'};
@@ -161,103 +172,106 @@ outdata.EDO = {evtstr, {'data','indp','dpnd','dpndg'}, {'loc','per'}, {'cue','ta
 
 
 if cfg.doplots
-    if cfg.ci
-        crit = tinv(.975,nsubs-1);
-    else
-        crit = 1;
-    end
     
-    barstr = {'data','indp','dpnd','dpnd+g'};
-    
-    %plot dependency
-    h = figure('color','white');
-    mycolors = get(gca,'defaultAxesColorOrder');
-    errorbar_groups(mean(avgdep,3)',crit*ste(avgdep,3)','bar_names',{'OpenLoop','ClosedLoop'},'bar_colors',mycolors,'FigID',h,...
-        'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
-    legend(barstr,'location','best');
-    title('Dependency frm log');
-    ylim([min(min(mean(avgdep,3)))-.1 1]);
-    set(gca,'fontsize',20);
-    
-    %plot by subj
-    figure('color','white');
-    hold on
-    myconds = barstr;
-%    mycolors = distinguishable_colors(length(myconds));
-%    set(groot,'defaultAxesColorOrder',mycolors);
-    lconds = {'openLoop','closedLoop'};
-    mymin = 1; a = [];
-    for ilcond = 1:2
-        a(ilcond) = subplot(1,2,ilcond);
-        tmp = squeeze(avgdep(ilcond,:,:));
-        plot(tmp','.','markersize',30);
-        hold on
-        if ilcond == 1,        ylabel('Dependency','fontsize',18);       end
-        xlabel('subject number','fontsize',18);
-        tmp = tmp';
-        for icond = 1:length(myconds)
-            shadedErrorBar(0:size(tmp,1)+1,repmat(mean(tmp(:,icond)),[1 size(tmp,1)+2]),repmat(ste(tmp(:,icond)),[1 size(tmp,1)+2]),{'--','linewidth',2,'color',mycolors(icond,:),'markerfacecolor',mycolors(1,:)},1);
-        end
-        title(lconds{ilcond});
-        set(gca,'fontsize',18);
-        xlim([0 size(avgdep,3)]);
-        box off
-        mymin = min([mymin min(tmp)]);
-    end
-    legend(myconds,'fontsize',18,'location','southwest');
-    for ilcond = 1:2,       ylim(a(ilcond),[mymin 1]);      end
-    
-    
-    
-    
-    %plot accuracy
-    figure('color','white');
-    mymin = min([min(min(nanmean(oProb,3))), min(min(nanmean(altcProb,3)))]);
-    mymax = max([max(max(nanmean(oProb,3))), max(max(nanmean(altcProb,3)))]);
-    h=subplot(1,2,1);
-    imsc(nanmean(oProb,3), [mymin mymax], 'jet', [.5 .5 .5]);
-    set(gca, 'DataAspectRatioMode', 'auto');
-    set(h,'ytick',1:1:size(oProb,2));
-    set(h,'yticklabel',probDO{1});
-    set(h,'xtick', 1:size(oProb,1));
-    set(h,'xticklabel',probDO{2});
-    title('OpenLoop accuracy');
-    set(gca,'fontsize',16);
-    h=subplot(1,2,2);
-    imsc(nanmean(altcProb,3), [mymin mymax], 'jet', [.5 .5 .5]); colorbar;
-    set(gca, 'DataAspectRatioMode', 'auto');
-    set(h,'ytick',1:1:size(altcProb,2));
-    set(h,'yticklabel',probDO{1});
-    set(h,'xtick', 1:size(altcProb,1));
-    set(h,'xticklabel',probDO{2});
-    title('ClosedLoop accuracy');
-    set(gca,'fontsize',16);
-    
-    %plot by type
-    h = figure('color','white');
-    mycolors = distinguishable_colors(8,{'w','k'});
-    hold on
-    mymin = 1;
-    a = [];
-    for iaxis = 1:2
-        a(iaxis) = subplot(1,2,iaxis);
-        if iaxis == 1, idim = 2; else idim = 1; end %hack to fix mean dimenison mismatch
-        omu = squeeze(nanmean(oProb,idim));
-        cmu = squeeze(nanmean(altcProb,idim));
-        mu = cat(3,omu,cmu);
-        mu = permute(mu, [3 1 2]);
-        errorbar_groups(mean(mu,3)', crit*ste(mu,3)','bar_names',{'OpenLoop','ClosedLoop'},'FigID', h, 'AxID', a(iaxis),...
-            'bar_colors',mycolors(1+((iaxis-1)*size(mycolors,1)/2):(iaxis*size(mycolors,1)/2),:),...
-            'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
-        legend(probDO{iaxis});
-        if iaxis == 1,          ylabel('Accuracy');        end
-        set(a(iaxis),'fontsize',20);
-        mymin = min([mymin min(mean(mu,3)-(crit*ste(mu,3)))]);
-    end
-    for iaxis = 1:2
-        ylim(a(iaxis),[mymin 1]);
-    end
-    
+    deevPlots(outdata,cfg);
+%     
+%     if cfg.ci
+%         crit = tinv(.975,nsubs-1);
+%     else
+%         crit = 1;
+%     end
+%     
+%     barstr = {'data','indp','dpnd','dpnd+g'};
+%     
+%     %plot dependency
+%     h = figure('color','white');
+%     mycolors = get(gca,'defaultAxesColorOrder');
+%     errorbar_groups(mean(avgdep,3)',crit*ste(avgdep,3)','bar_names',{'OpenLoop','ClosedLoop'},'bar_colors',mycolors,'FigID',h,...
+%         'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
+%     legend(barstr,'location','best');
+%     title('Dependency frm log');
+%     ylim([min(min(mean(avgdep,3)))-.1 1]);
+%     set(gca,'fontsize',20);
+%     
+%     %plot by subj
+%     figure('color','white');
+%     hold on
+%     myconds = barstr;
+% %    mycolors = distinguishable_colors(length(myconds));
+% %    set(groot,'defaultAxesColorOrder',mycolors);
+%     lconds = {'openLoop','closedLoop'};
+%     mymin = 1; a = [];
+%     for ilcond = 1:2
+%         a(ilcond) = subplot(1,2,ilcond);
+%         tmp = squeeze(avgdep(ilcond,:,:));
+%         plot(tmp','.','markersize',30);
+%         hold on
+%         if ilcond == 1,        ylabel('Dependency','fontsize',18);       end
+%         xlabel('subject number','fontsize',18);
+%         tmp = tmp';
+%         for icond = 1:length(myconds)
+%             shadedErrorBar(0:size(tmp,1)+1,repmat(mean(tmp(:,icond)),[1 size(tmp,1)+2]),repmat(ste(tmp(:,icond)),[1 size(tmp,1)+2]),{'--','linewidth',2,'color',mycolors(icond,:),'markerfacecolor',mycolors(1,:)},1);
+%         end
+%         title(lconds{ilcond});
+%         set(gca,'fontsize',18);
+%         xlim([0 size(avgdep,3)]);
+%         box off
+%         mymin = min([mymin min(tmp)]);
+%     end
+%     legend(myconds,'fontsize',18,'location','southwest');
+%     for ilcond = 1:2,       ylim(a(ilcond),[mymin 1]);      end
+%     
+%     
+%     
+%     
+%     %plot accuracy
+%     figure('color','white');
+%     mymin = min([min(min(nanmean(oProb,3))), min(min(nanmean(altcProb,3)))]);
+%     mymax = max([max(max(nanmean(oProb,3))), max(max(nanmean(altcProb,3)))]);
+%     h=subplot(1,2,1);
+%     imsc(nanmean(oProb,3), [mymin mymax], 'jet', [.5 .5 .5]);
+%     set(gca, 'DataAspectRatioMode', 'auto');
+%     set(h,'ytick',1:1:size(oProb,2));
+%     set(h,'yticklabel',probDO{1});
+%     set(h,'xtick', 1:size(oProb,1));
+%     set(h,'xticklabel',probDO{2});
+%     title('OpenLoop accuracy');
+%     set(gca,'fontsize',16);
+%     h=subplot(1,2,2);
+%     imsc(nanmean(altcProb,3), [mymin mymax], 'jet', [.5 .5 .5]); colorbar;
+%     set(gca, 'DataAspectRatioMode', 'auto');
+%     set(h,'ytick',1:1:size(altcProb,2));
+%     set(h,'yticklabel',probDO{1});
+%     set(h,'xtick', 1:size(altcProb,1));
+%     set(h,'xticklabel',probDO{2});
+%     title('ClosedLoop accuracy');
+%     set(gca,'fontsize',16);
+%     
+%     %plot by type
+%     h = figure('color','white');
+%     mycolors = distinguishable_colors(8,{'w','k'});
+%     hold on
+%     mymin = 1;
+%     a = [];
+%     for iaxis = 1:2
+%         a(iaxis) = subplot(1,2,iaxis);
+%         if iaxis == 1, idim = 2; else idim = 1; end %hack to fix mean dimenison mismatch
+%         omu = squeeze(nanmean(oProb,idim));
+%         cmu = squeeze(nanmean(altcProb,idim));
+%         mu = cat(3,omu,cmu);
+%         mu = permute(mu, [3 1 2]);
+%         errorbar_groups(mean(mu,3)', crit*ste(mu,3)','bar_names',{'OpenLoop','ClosedLoop'},'FigID', h, 'AxID', a(iaxis),...
+%             'bar_colors',mycolors(1+((iaxis-1)*size(mycolors,1)/2):(iaxis*size(mycolors,1)/2),:),...
+%             'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
+%         legend(probDO{iaxis});
+%         if iaxis == 1,          ylabel('Accuracy');        end
+%         set(a(iaxis),'fontsize',20);
+%         mymin = min([mymin min(mean(mu,3)-(crit*ste(mu,3)))]);
+%     end
+%     for iaxis = 1:2
+%         ylim(a(iaxis),[mymin 1]);
+%     end
+%     
 end
 
 

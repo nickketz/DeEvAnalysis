@@ -89,6 +89,6 @@ for ivar = 1:length(vars)
     vardata.(vars{ivar}) = cdata{ivar};
 end
 outdata.data = vardata;
-outdata.logname = cdata{ivar+1};
+outdata.lognames = cdata{ivar+1};
 outdata.vartype = vartype;
 outdata.cfg = cfg;
