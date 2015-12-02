@@ -7,7 +7,16 @@ function acc = deevResAcc(in)
 %   in: res matrix with dimensions events x cue-targ array x subs
 %
 % ouput:
-%   acc: 1 x subs accuracy collapsed across cue-targ array dimensions
+%   acc: blocks x subs accuracy collapsed across cue-targ array dimensions
 %
 
-acc = nanmean(reshape(in, numel(in(:,:,1)), size(in,3)));
+acc = [];
+if size(in,4)==4
+    %do by block
+    for i = 1:size(in,4)
+        tmp = in(:,:,:,i);
+        acc = cat(1,acc, nanmean(reshape(tmp, numel(tmp(:,:,1)), size(tmp,3))));
+    end
+else
+    acc = nanmean(reshape(in, numel(in(:,:,1)), size(in,3)));
+end
