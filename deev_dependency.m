@@ -24,8 +24,10 @@ if nargin   < 3
 end
 
 %% calculate dependency for data
- 
-res2        = res(:,pair);                                  % create column Mx2 matrix for retrieval trials defined by 'pair'
+
+% modified res2 to work with non-binary values in for recall case where res
+% is percet correct of all associated elements
+res2        = floor(res(:,pair));                           % create column Mx2 matrix for retrieval trials defined by 'pair'  
 dep(1)      = sum(sum(res2,2)~=1)/size(res2,1);         	% calculate dependency for data
 
 %% calculate dependency for independent model
