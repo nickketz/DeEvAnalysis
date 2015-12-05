@@ -209,3 +209,35 @@ end
 for iaxis = 1:2
     ylim(a(iaxis),[mymin 1]);
 end
+
+
+
+if isfield(in,'ntacc') %is there non-targ accuracy? 
+    nEvts = size(in.ntCueTarg,1);
+    ol = in.ntCueTarg(1:nEvts/2,:,:);
+    cl = in.ntCueTarg(nEvts/2+1:end,:,:);
+    olacc = squeeze(mean(ol,1))';
+    clacc = squeeze(mean(cl,1))';
+    tmp = cat(3,olacc,clacc); tmp = permute(tmp,[3,1,2]);
+    mycolors = distinguishable_colors(2,{'w','k'});
+    [xtick,hb,he] = errorbar_groups(mean(tmp,3), crit*ste(tmp,3),'bar_names',in.ntCueTargDO{3},...
+        'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
+    legend({'openLoop','closedLoop'});
+    hold on
+    stops = [-.5 .5];
+    for igrp = 1:length(xtick)
+        plot(repmat(xtick(igrp)+stops(1),size(tmp,3),2),squeeze(tmp(1,igrp,:)),'k.','markersize',20)
+        plot(repmat(xtick(igrp)+stops(2),size(tmp,3),2),squeeze(tmp(2,igrp,:)),'k.','markersize',20)
+    end
+
+    ntacc = mean(in.ntacc,2)';
+    ntste = ste(in.ntacc,2);
+    for icond = 1:2
+        shadedErrorBar(xlim, repmat(ntacc(icond),2,1), repmat(crit.*ntste(icond),2,1),...
+            {'--','linewidth',2,'color',mycolors(icond,:),'markerfacecolor',mycolors(1,:)},1);
+    end
+    
+    set(gca,'fontsize',20);
+    ylabel('non-target accuracy');
+    
+end

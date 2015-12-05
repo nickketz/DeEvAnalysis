@@ -18,7 +18,7 @@ function outdata = deevReadEmerLogs(cfg)
 if ~exist('cfg','var')          cfg = [];                end
 if ~isfield(cfg,'badsubs')      cfg.badsubs = [];        end %which subjects to remove
 if ~isfield(cfg,'filefiltstr')  cfg.filefiltstr = 'deev_36events_Sub[0-9]{1,2}\.txt';     end
-if ~isfield(cfg,'dir')          cfg.dir = 'logs';    end %where are the log files?
+if ~isfield(cfg,'dir')          cfg.dir = 'logs';        end %where are the log files?
 
 
 files = dir([cfg.dir filesep '*.txt']);
