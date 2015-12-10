@@ -8,14 +8,19 @@ function deevPlots(in,cfg)
 %       ci = bool confidence interval? def=1
 %       blk = array of which blocks to do plots on, or 'avg' implies an
 %             average across blocks, def='avg'
+%       mdl = cell array of which models to plot, default {'ind','dpn','dpng'}
+%       blkplts = bool, do block plots of accuracy, dependency and ol vs cl
+%       delta dep, def=0
 %
 %
 %
 
 %set defaults
-if ~exist('cfg','var')      cfg = [];                     end
-if ~isfield(cfg,'ci')       cfg.ci = 1;                   end
-if ~isfield(cfg,'blk')      cfg.blk = 'avg';              end
+if ~exist('cfg','var')      cfg = [];                                   end
+if ~isfield(cfg,'ci')       cfg.ci = 1;                                 end
+if ~isfield(cfg,'blk')      cfg.blk = 'avg';                            end
+if ~isfield(cfg,'mdls')     cfg.mdls = {'data','indp','dpnd','dpndg'};  end
+if ~isfield(cfg,'blkplts')  cfg.blkplts = 0;                            end
 
 
 %is in from the blk version of the study?
@@ -50,6 +55,9 @@ end
     
 nsubs = length(in.logdata.lognames);
 
+mdls = {'data','indp','dpnd','dpndg'};
+mdlinds = find(ismember(cfg.mdls,mdls));
+
 if cfg.ci
     crit = tinv(.975,nsubs-1);
 else
@@ -58,14 +66,17 @@ end
 
 barstr = {'data','indp','dpnd','dpnd+g'};
 
+
 %plot dependency
 h = figure('color','white','name',blkstr);
 mycolors = get(gca,'defaultAxesColorOrder');
-errorbar_groups(mean(avgdep,3)',crit*ste(avgdep,3)','bar_names',{'OpenLoop','ClosedLoop'},'bar_colors',mycolors,'FigID',h,...
+tmp = avgdep(:, mdlinds, :);
+errorbar_groups(mean(tmp,3)',crit*ste(tmp,3)','bar_names',{'OpenLoop','ClosedLoop'},'bar_colors',mycolors,'FigID',h,...
     'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
-legend(barstr,'location','best');
+legend(barstr(mdlinds),'location','best');
 title('Dependency');
-ylim([min(min(mean(avgdep,3)))-.1 1]);
+%ylim([min(min(mean(tmp,3)))-.1 1]);
+ylim([.6 1]);
 set(gca,'fontsize',20);
 
 %plot by subj
@@ -79,13 +90,13 @@ if size(avgdep,3)>1
     mymin = 1; a = [];
     for ilcond = 1:2
         a(ilcond) = subplot(1,2,ilcond);
-        tmp = squeeze(avgdep(ilcond,:,:));
+        tmp = squeeze(avgdep(ilcond,mdlinds,:));
         plot(tmp','.','markersize',30);
         hold on
         if ilcond == 1,        ylabel('Dependency','fontsize',18);       end
         xlabel('subject number','fontsize',18);
         tmp = tmp';
-        for icond = 1:length(myconds)
+        for icond = 1:length(myconds(mdlinds))
             shadedErrorBar(0:size(tmp,1)+1,repmat(mean(tmp(:,icond)),[1 size(tmp,1)+2]),repmat(ste(tmp(:,icond)),[1 size(tmp,1)+2]),{'--','linewidth',2,'color',mycolors(icond,:),'markerfacecolor',mycolors(1,:)},1);
         end
         title(lconds{ilcond});
@@ -94,7 +105,7 @@ if size(avgdep,3)>1
         box off
         mymin = min([mymin min(tmp)]);
     end
-    legend(myconds,'fontsize',18,'location','southwest');
+    legend(myconds(mdlinds),'fontsize',18,'location','southwest');
     mymin = min(avgdep(:)); mymax = max(avgdep(:));
     for ilcond = 1:2,       ylim(a(ilcond),[mymin mymax]);      end
 end
@@ -103,12 +114,28 @@ end
 %plot interaction
 h = figure('color','white','name',blkstr);
 mycolors = get(gca,'defaultAxesColorOrder');
-errorbar_groups(squeeze(mean(avgdepdif,1)),crit*squeeze(ste(avgdepdif,1)),'bar_names',{'OpenLoop','ClosedLoop'},'bar_colors',mycolors(2:end,:),'FigID',h,...
+[bar,hb,he] = errorbar_groups(squeeze(mean(avgdepdif,1)),crit*squeeze(ste(avgdepdif,1)),'bar_names',{'OpenLoop','ClosedLoop'},'bar_colors',mycolors(2:end,:),'FigID',h,...
     'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
 legend({'dIndp','dDpnd','dDpnd+G'},'location','best');
 title('Delta Dependency');
 %ylim([min(depdif(:)) max(depdif(:))]);
 set(gca,'fontsize',20);
+%plot significance?
+mu = squeeze(mean(avgdepdif,1));
+for ibar = 1:length(bar)
+    [sig,p] = ttest(avgdepdif(:,:,ibar));
+    for isig = 1:length(sig)
+        if sig(isig)
+            dif = [-1 0 1];
+            ptext = '*';
+            if p(isig)<0.01     ptext = [ptext '*'];    end
+            if p(isig)<0.001    ptext = [ptext '*'];    end
+            text((bar(ibar)+dif(isig))*1.1, (mu(isig,ibar))*1.1, ptext,'fontsize',20);
+        end
+    end
+end
+
+
 
 
 %interaction by subject
@@ -240,4 +267,63 @@ if isfield(in,'ntacc') %is there non-targ accuracy?
     set(gca,'fontsize',20);
     ylabel('non-target accuracy');
     
+end
+
+if cfg.blkplts
+    %testing block plots
+    blkdiff = cat(3,squeeze(in.avgdepdif(:,1,1,:)),squeeze(in.avgdepdif(:,1,2,:)));
+    if cfg.ci
+        crit = tinv(.975,size(blkdiff,1)-1);
+    else
+        crit = 1;
+    end
+    h = figure('color','white');
+    mycolors = get(gca,'defaultAxesColorOrder');
+    errorbar_groups(squeeze(mean(blkdiff,1))',crit.*squeeze(ste(blkdiff,1))',...
+        'bar_names',{'Blk1','Blk2','Blk3','Blk4'},'bar_colors',mycolors(5:end,:),'FigID', h);
+    hold on
+    if cfg.ci
+        avgcrit = tinv(.975,4*size(blkdiff,1)-1);
+    else
+        avgcrit = 1;
+    end
+    for icond = 1:size(blkdiff,3)
+        condmean =  mean(reshape(blkdiff(:,:,icond),numel(blkdiff(:,:,icond)),1));
+        condste = ste(reshape(blkdiff(:,:,icond),numel(blkdiff(:,:,icond)),1));
+        shadedErrorBar(xlim,repmat(condmean,1,2),repmat(avgcrit*condste,1,2),...
+            {'--','linewidth',2,'color',mycolors(4+icond,:),'markerfacecolor',mycolors(1,:)},1);
+    end
+    ylabel('data-independent model');
+    legend('openLoop','closedLoop');
+    set(gca,'fontsize',20);
+    
+    olacc = deevResAcc(in.res(1:18,:,:,:))';
+    clacc = deevResAcc(in.res(19:end,:,:,:))';
+    oldep = squeeze(in.avgdep(1,1,:,:));
+    cldep = squeeze(in.avgdep(2,1,:,:));
+    
+    mycolors = distinguishable_colors(4);
+    blkstr = {'blk1','blk2','blk3','blk4'};
+    h = figure('color','white');
+    
+    ax = subplot(2,2,1);
+    errorbar_groups(mean(olacc),crit.*ste(olacc),'bar_colors',mycolors(1,:),'bar_names', blkstr, 'FigID', h, 'AxID', ax,...
+        'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
+    ylabel('accuracy'); title('openloop'); ylim([0,1]); set(gca,'fontsize',20);
+    
+    ax = subplot(2,2,2);
+    errorbar_groups(mean(clacc),crit.*ste(clacc),'bar_colors',mycolors(2,:),'bar_names', blkstr, 'FigID', h, 'AxID', ax,...
+        'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
+    title('closedloop'); ylim([0,1]); set(gca,'fontsize',20);
+    
+    ax = subplot(2,2,3);
+    errorbar_groups(mean(oldep),crit.*ste(oldep),'bar_colors',mycolors(3,:),'bar_names', blkstr, 'FigID', h, 'AxID', ax,...
+        'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
+    ylabel('dependency'); ylim([.5,1]); set(gca,'fontsize',20);
+    
+    ax = subplot(2,2,4);
+    errorbar_groups(mean(cldep),crit.*ste(cldep),'bar_colors',mycolors(4,:),'bar_names', blkstr, 'FigID', h, 'AxID', ax,...
+        'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
+    ylim([.5,1]); set(gca,'fontsize',20);
+   
 end
