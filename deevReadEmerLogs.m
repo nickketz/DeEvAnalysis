@@ -41,6 +41,11 @@ files = files(~ismember(snums,cfg.badsubs));
 goodsubs = regexp(files,'_Sub([0-9]+)\.txt','tokens');
 goodsubs = cellfun(@(x) (str2num(x{1}{1})),goodsubs);
 
+%make sure logs are sorted by subject number
+[goodsubs,ind] = sort(goodsubs);
+files = files(ind);
+
+
 
 %get var names and types from header
 temp = textread(files{1},'%s');

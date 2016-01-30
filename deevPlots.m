@@ -25,14 +25,14 @@ if ~isfield(cfg,'blkplts')  cfg.blkplts = 0;                            end
 
 %is in from the blk version of the study?
 blkstr = '';
-if length(size(in.dep))==6
+if length(size(in.dep))==6 || length(in.subs)==1
     
     if strcmp(cfg.blk, 'avg')
         %create block averages for plotting
-        avgdep = squeeze(mean(in.avgdep,4));
-        avgdepdif = squeeze(mean(in.avgdepdif,4));
-        oProb = squeeze(mean(in.oProb,4));
-        cProb = squeeze(mean(in.cProb,4));
+        avgdep = squeeze(mean(in.avgdep,ndims(in.avgdep)));
+        avgdepdif = squeeze(mean(in.avgdepdif,ndims(in.avgdepdif)));
+        oProb = squeeze(mean(in.oProb,ndims(in.oProb)));
+        cProb = squeeze(mean(in.cProb,ndims(in.cProb)));
         probDO = in.probDO(1:end-1);
         blkstr = 'avg';
     else
@@ -52,7 +52,7 @@ else %not in blocks
     cProb = in.cProb;
     probDO = in.probDO;
 end
-    
+
 nsubs = length(in.logdata.lognames);
 
 mdls = {'data','indp','dpnd','dpndg'};
@@ -75,8 +75,8 @@ errorbar_groups(mean(tmp,3)',crit*ste(tmp,3)','bar_names',{'OpenLoop','ClosedLoo
     'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
 legend(barstr(mdlinds),'location','best');
 title('Dependency');
-%ylim([min(min(mean(tmp,3)))-.1 1]);
-ylim([.6 1]);
+ylim([min(min(mean(tmp,3)))-.1 1]);
+%ylim([.6 .9]);
 set(gca,'fontsize',20);
 
 %plot by subj
@@ -121,16 +121,18 @@ title('Delta Dependency');
 %ylim([min(depdif(:)) max(depdif(:))]);
 set(gca,'fontsize',20);
 %plot significance?
-mu = squeeze(mean(avgdepdif,1));
-for ibar = 1:length(bar)
-    [sig,p] = ttest(avgdepdif(:,:,ibar));
-    for isig = 1:length(sig)
-        if sig(isig)
-            dif = [-1 0 1];
-            ptext = '*';
-            if p(isig)<0.01     ptext = [ptext '*'];    end
-            if p(isig)<0.001    ptext = [ptext '*'];    end
-            text((bar(ibar)+dif(isig))*1.1, (mu(isig,ibar))*1.1, ptext,'fontsize',20);
+if length(in.subs)>1
+    mu = squeeze(mean(avgdepdif,1));
+    for ibar = 1:length(bar)
+        [sig,p] = ttest(avgdepdif(:,:,ibar));
+        for isig = 1:length(sig)
+            if sig(isig)
+                dif = [-1 0 1];
+                ptext = '*';
+                if p(isig)<0.01     ptext = [ptext '*'];    end
+                if p(isig)<0.001    ptext = [ptext '*'];    end
+                text((bar(ibar)+dif(isig))*1.1, (mu(isig,ibar))*1.1, ptext,'fontsize',20);
+            end
         end
     end
 end
@@ -139,37 +141,38 @@ end
 
 
 %interaction by subject
-figure('color','white','name',blkstr);
-hold on
-myconds = {'dInd','dDep','dDepG'};
-lconds = {'openLoop','closedLoop'};
-mymin = 1; mymax = 0; a = [];
-mycolors = mycolors(2:end,:);
-for ilcond = 1:2
-    a(ilcond) = subplot(1,2,ilcond);
-    tmp = squeeze(avgdepdif(:,:,ilcond));
-    set(gca,'ColorOrderIndex',3);
-    for icond = 1:length(myconds)
-        plot(tmp(:,icond),'.','markersize',30,'color',mycolors(icond,:));
-        hold on
+if length(in.subs)>1
+    figure('color','white','name',blkstr);
+    hold on
+    myconds = {'dInd','dDep','dDepG'};
+    lconds = {'openLoop','closedLoop'};
+    mymin = 1; mymax = 0; a = [];
+    mycolors = mycolors(2:end,:);
+    for ilcond = 1:2
+        a(ilcond) = subplot(1,2,ilcond);
+        tmp = squeeze(avgdepdif(:,:,ilcond));
+        set(gca,'ColorOrderIndex',3);
+        for icond = 1:length(myconds)
+            plot(tmp(:,icond),'.','markersize',30,'color',mycolors(icond,:));
+            hold on
+        end
+        if ilcond == 1,        ylabel('Delta Dependency','fontsize',18);       end
+        xlabel('subject number','fontsize',18);
+        %tmp = tmp';
+        for icond = 1:length(myconds)
+            shadedErrorBar(0:size(tmp,1)+1,repmat(mean(tmp(:,icond)),[1 size(tmp,1)+2]),repmat(crit*ste(tmp(:,icond)),...
+                [1 size(tmp,1)+2]),{'--','linewidth',2,'color',mycolors(icond,:),'markerfacecolor',mycolors(1,:)},1);
+        end
+        title(lconds{ilcond});
+        set(gca,'fontsize',18);
+        xlim([0 size(avgdep,3)]);
+        box off
+        mymin = min([mymin min(tmp(:))]);
+        mymax = max([mymax max(tmp(:))]);
     end
-    if ilcond == 1,        ylabel('Delta Dependency','fontsize',18);       end
-    xlabel('subject number','fontsize',18);
-    %tmp = tmp';
-    for icond = 1:length(myconds)
-        shadedErrorBar(0:size(tmp,1)+1,repmat(mean(tmp(:,icond)),[1 size(tmp,1)+2]),repmat(crit*ste(tmp(:,icond)),...
-            [1 size(tmp,1)+2]),{'--','linewidth',2,'color',mycolors(icond,:),'markerfacecolor',mycolors(1,:)},1);
-    end
-    title(lconds{ilcond});
-    set(gca,'fontsize',18);
-    xlim([0 size(avgdep,3)]);
-    box off
-    mymin = min([mymin min(tmp(:))]);
-    mymax = max([mymax max(tmp(:))]);
+    legend(myconds,'fontsize',18,'location','southwest');
+    for ilcond = 1:2,       ylim(a(ilcond),[mymin mymax]);      end
 end
-legend(myconds,'fontsize',18,'location','southwest');
-for ilcond = 1:2,       ylim(a(ilcond),[mymin mymax]);      end
-
 
 %plot accuracy
 figure('color','white','name',blkstr);
@@ -239,7 +242,7 @@ end
 
 
 
-if isfield(in,'ntacc') %is there non-targ accuracy? 
+if isfield(in,'ntacc') %is there non-targ accuracy?
     nEvts = size(in.ntCueTarg,1);
     ol = in.ntCueTarg(1:nEvts/2,:,:);
     cl = in.ntCueTarg(nEvts/2+1:end,:,:);
@@ -256,7 +259,7 @@ if isfield(in,'ntacc') %is there non-targ accuracy?
         plot(repmat(xtick(igrp)+stops(1),size(tmp,3),2),squeeze(tmp(1,igrp,:)),'k.','markersize',20)
         plot(repmat(xtick(igrp)+stops(2),size(tmp,3),2),squeeze(tmp(2,igrp,:)),'k.','markersize',20)
     end
-
+    
     ntacc = mean(in.ntacc,2)';
     ntste = ste(in.ntacc,2);
     for icond = 1:2
@@ -325,5 +328,5 @@ if cfg.blkplts
     errorbar_groups(mean(cldep),crit.*ste(cldep),'bar_colors',mycolors(4,:),'bar_names', blkstr, 'FigID', h, 'AxID', ax,...
         'optional_errorbar_arguments',{'LineStyle','none','Marker','none','LineWidth',5});
     ylim([.5,1]); set(gca,'fontsize',20);
-   
+    
 end

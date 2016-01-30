@@ -44,6 +44,7 @@ goodsubs = cellfun(@(x) (str2num(x{1}{1})),goodsubs);
 
 %get var names and types from header
 temp = textread(files{1},'%s');
+header = temp{1};
 vars = strread(temp{1},'%s','delimiter',';');
 fstring = [];
 vartype = {};
@@ -76,13 +77,21 @@ for ilog = 1:length(files)
     %read in log file
     logfilename = files{ilog};
     fid = fopen(logfilename,'r');
-    mydata = textscan(fid, fstring, 'Headerlines', 1, 'Delimiter', ';', 'TreatAsEmpty', {'na'});        
-    fclose(fid);
-    
-    for ivar = 1:length(vars)
-        cdata{ivar} = cat(2,cdata{ivar}, mydata{ivar});
+    %check that header's match
+    temp = textread(files{ilog},'%s');
+    if ~strcmp(temp{1},header)
+        names = regexp(files,'/','split');
+        warning('Log %s header doesn''t match template\nskipping this log',names{ilog}{end});        
+    else
+        mydata = textscan(fid, fstring, 'Headerlines', 1, 'Delimiter', ';', 'TreatAsEmpty', {'na'});
+        fclose(fid);
+        
+        for ivar = 1:length(vars)
+            cdata{ivar} = cat(2,cdata{ivar}, mydata{ivar});
+        end
+        cdata{ivar+1} = cat(2,cdata{ivar+1},files(ilog));
     end
-    cdata{ivar+1} = cat(2,cdata{ivar+1},files(ilog));
+
 end
 
 for ivar = 1:length(vars)
