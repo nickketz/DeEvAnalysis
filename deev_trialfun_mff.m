@@ -106,8 +106,7 @@ for fn = 1:length(fn_trl_ord)
     end
 end
 if maxTrlCols == -Inf
-    fprintf('Did not set maximum number of trialinfo columns!\n');
-    keyboard
+    error('Did not set maximum number of trialinfo columns!\n');
 end
 timeCols = 3;
 eventNumCols = 1;
@@ -115,7 +114,13 @@ trl_ini = -1 * ones(1, timeCols + eventNumCols + maxTrlCols);
 
 if cfg.eventinfo.usePhotodiodeDIN
     photodiodeDIN_toleranceMS = cfg.eventinfo.photodiodeDIN_toleranceMS;
-    photodiodeDIN_toleranceSamp = ceil((photodiodeDIN_toleranceMS / 1000) * ft_hdr.Fs);
+    photodiodeDIN_toleranceSamp = ceil((photodiodeDIN_toleranceMS / 1000) * ft_hdr.Fs);        
+end
+
+if ~isfield(cfg.eventinfo,'offsetMSTCP')
+    error('need to set default TCP offset!');
+else
+    offsetTCPSamp = ceil((cfg.eventinfo.offsetMSTCP/1000)*ft_hdr.Fs);
 end
 
 if cfg.eventinfo.offsetMS == -1
@@ -141,6 +146,14 @@ ft_event = ft_event(~cellfun(@isempty,{ft_event.value}));
 % only keep the ft events with triggers
 ft_event = ft_event(ismember({ft_event.value},triggers));
 
+%any DIN triggers left?
+if cfg.eventinfo.usePhotodiodeDIN
+    isDIN = sum(strcmp(cfg.eventinfo.photodiodeDIN_str,{ft_event.value}))>0;
+    if ~isDIN
+        warning('No photodiode events found with value %s\ndefault TCP offset of %.2fms will be used',...
+            cfg.eventinfo.photodiodeDIN_str, cfg.eventinfo.offsetMSTCP);
+    end
+end
 
 %% go through events and add metadata to trl matrix
 
@@ -176,8 +189,10 @@ for i = 1:length(ft_event)
                 
                 %coded stim types (i.e. 1 through 4) to match ordn coding
                 stimtypes = {'encLoc','encPer','encObj','encAni'}; 
+                notstimtypes = {'encNotLoc','encNotPer','encNotObj','encNotAni'};
                 evVal = stimtypes(cellfun(@str2num,ordn));
-                
+                evVal = cat(2,evVal,notstimtypes(~ismember(stimtypes,evVal)));
+
             case 'TRG2'
                 keeptrial = 1;
                 %retrieval trials
@@ -185,7 +200,7 @@ for i = 1:length(ft_event)
                 %is this OL or CL?
                 cols.cond = find(strcmp(ns_evt_cols,'sttp'));
                 if isempty(cols.cond)
-                    keyboard
+                    error('could not find stim type column to determine condition')
                 end
                 
                 sttp = ft_event(i).orig.keys(cols.cond).key.data.data;
@@ -198,8 +213,7 @@ for i = 1:length(ft_event)
             % find where this event type occurs in the list
             eventNumber = find(ismember(cfg.trialdef.eventvalue,evVal));
             if isempty(eventNumber)
-                fprintf('event number not found for %s!\n',evVal);
-                keyboard
+                error('event number not found for %s!\n',evVal{1});
             end
             
             fulleventNumber = eventNumber;
@@ -229,7 +243,7 @@ for i = 1:length(ft_event)
                 % within the threshold, replace the current sample time
                 % with that of the DIN
                 % otherwise use default offset calculated from timing tests
-                if cfg.eventinfo.usePhotodiodeDIN
+                if cfg.eventinfo.usePhotodiodeDIN && isDIN
                     
                     %find time between next and previous event
                     diffs = [ft_event(i+1).sample ft_event(i-1).sample] - this_sample;
@@ -244,15 +258,17 @@ for i = 1:length(ft_event)
                     myind = [1 -1]; myind = myind(imin);
                     
                     %is it in our acceptable range
-                    if mydiff <= photodiodeDIN_toleranceSamp
+                    if abs(mydiff) <= photodiodeDIN_toleranceSamp
                         this_sample = ft_event(i+myind).sample;
                     else
                         %min DIN not in tolerance range
                         %use default offset here
-                        keyboard
-                        this_sample = ft_event(i).sample + cfg.eventinfo.offsetMSTCP;
+                        warning('min DIN not in tolerance range\nusing default TCP offset of %.2fms',cfg.eventinfo.offsetMSTCP);
+                        this_sample = ft_event(i).sample + offsetTCPSamp;
                     end
-                    
+                else
+                    %use default tcp offset
+                    this_sample = ft_event(i).sample + offsetTCPSamp;                    
                 end
                 
                 % prestimulus sample
