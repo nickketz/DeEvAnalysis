@@ -243,7 +243,7 @@ for i = 1:length(ft_event)
                 % within the threshold, replace the current sample time
                 % with that of the DIN
                 % otherwise use default offset calculated from timing tests
-                if cfg.eventinfo.usePhotodiodeDIN && isDIN
+                if cfg.eventinfo.usePhotodiodeDIN && isDIN && (i~=1 && i<length(ft_event))
                     
                     %find time between next and previous event
                     diffs = [ft_event(i+1).sample ft_event(i-1).sample] - this_sample;

@@ -220,7 +220,7 @@ ana.cfg_cont.hpfiltord = 4;
 ana.cfg_cont.bsfilter = 'yes';
 ana.cfg_cont.bsfreq = [59 61];
 
-ana.artifact.continuousRepair = (cfg_in.repair || cfg_in.ica);
+ana.artifact.continuousRepair = (cfg_in.repair && ~cfg_in.ica);
 ana.artifact.continuousReject = cfg_in.ica;
 ana.artifact.continuousICA = cfg_in.ica;
 
@@ -237,7 +237,7 @@ else
 end
 % ana.artifact.resumeManArtFT = false;
 ana.artifact.resumeManArtContinuous = true;
-ana.artifact.resumeICACompContinuous = false;
+ana.artifact.resumeICACompContinuous = true;
 % negative trlpadding: don't check that time (on both sides) for artifacts.
 % IMPORTANT: Not used for threshold artifacts. only use if segmenting a lot
 % of extra time around trial epochs. Otherwise set to zero.
@@ -248,16 +248,16 @@ ana.artifact.fltpadding = 0;
 % set up for ftAuto after continuous ICA rejection
 ana.artifact.checkAllChan = true;
 ana.artifact.thresh = true;
-ana.artifact.threshmin = -100;
-ana.artifact.threshmax = 100;
-ana.artifact.threshrange = 200;
+ana.artifact.threshmin = -200;
+ana.artifact.threshmax = 200;
+ana.artifact.threshrange = 400;
 ana.artifact.basic_art = true;
 ana.artifact.basic_art_z = 30;
 ana.artifact.jump_art = true;
 ana.artifact.jump_art_z = 80;
 
 % eog_art is only used with ftAuto
-ana.artifact.eog_art = true;
+ana.artifact.eog_art = false;
 ana.artifact.eog_art_z = 5;
 
 % single precision to save space

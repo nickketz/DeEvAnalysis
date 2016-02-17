@@ -41,7 +41,15 @@ else
     %comp.icasphere = 2.0*inv(sqrtm(cov(ts(1:end-1,:)')));
 end
 
-[comp,cfg_sasica] = ft_SASICA(comp,cfg_sasica);
-
+try
+    evalin('base','clear comp');  %make sure there's no preexisting comp in base workspace
+    ft_SASICA(comp,cfg_sasica);
+    uiwait(gcf);
+    %grab comp from base, then remove it 
+    comp = evalin('base','comp');
+    evalin('base','clear comp');     
+catch
+    warning('error in plotting, redoing...');
+end
 rmpath(fullfile(dirs.dataroot,'..','scripts','SASICA'));
 
