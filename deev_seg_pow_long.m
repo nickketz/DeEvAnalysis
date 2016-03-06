@@ -1,4 +1,4 @@
-function deev_seg_pow(subs,cfg_in)
+function deev_seg_pow_long(subs,cfg_in)
 % function to take netstation mff files and them into the deev time
 % frequency analysis
 %
@@ -50,7 +50,7 @@ exper.eventValues = {'OL','CL','encLoc','encPer','encObj','encAni','encNotLoc','
 % Construct as a cell with one Nx2 matrix per session where N is
 % length(exper.eventValues{ses}) Order must correspond to the event order
 % in exper.eventValues.
-exper.prepost = {repmat([-1.0 2.5],length(exper.eventValues),1)};
+exper.prepost = {repmat([-1.0 6],length(exper.eventValues),1)};
 
 if ~iscell(subs)
     subs = {subs};
@@ -74,8 +74,8 @@ exper.sessions = {{'ses1'}};
 
 % directory where the data to read is located
 dirs.subDir = '';
-dirs.behDir = fullfile(exper.name,'Behavioral','Sessions','v1',dirs.subDir);
-dirs.dataDir = fullfile(exper.name,'EEG','Sessions','v1',dirs.subDir);
+dirs.behDir = fullfile(exper.name,'Behavioral','Sessions','long',dirs.subDir);
+dirs.dataDir = fullfile(exper.name,'EEG','Sessions','long',dirs.subDir);
 
 % Possible locations of the data files (dataroot)
 %dirs.serverDir = fullfile(filesep,'Volumes','curranlab','Data');
@@ -190,7 +190,7 @@ cfg_proc = [];
 cfg_proc.method = 'wavelet';
 cfg_proc.width = 4;
 %cfg_proc.toi = -0.8:0.04:3.0;
-cfg_proc.toi = -1.0:0.04:2.0;
+cfg_proc.toi = -1.0:0.04:6.0;
 % evenly spaced frequencies, but not as many as foilim makes
 freqstep = (exper.sampleRate./(diff(exper.prepost{1}')*exper.sampleRate)) * 2;
 %cfg_proc.foi = 3:freqstep:50;
@@ -220,7 +220,7 @@ ana.cfg_cont.hpfiltord = 4;
 ana.cfg_cont.bsfilter = 'yes';
 ana.cfg_cont.bsfreq = [59 61];
 
-ana.artifact.continuousRepair = (cfg_in.repair);
+ana.artifact.continuousRepair = (cfg_in.repair && ~cfg_in.ica);
 ana.artifact.continuousReject = cfg_in.ica;
 ana.artifact.continuousICA = cfg_in.ica;
 
@@ -237,7 +237,7 @@ else
 end
 % ana.artifact.resumeManArtFT = false;
 ana.artifact.resumeManArtContinuous = true;
-ana.artifact.resumeICACompContinuous = ~cfg_in.repair;
+ana.artifact.resumeICACompContinuous = true;
 % negative trlpadding: don't check that time (on both sides) for artifacts.
 % IMPORTANT: Not used for threshold artifacts. only use if segmenting a lot
 % of extra time around trial epochs. Otherwise set to zero.

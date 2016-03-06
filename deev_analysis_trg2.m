@@ -17,15 +17,16 @@ nTrials = [];
 for icond = 1:length(conds)
     nTrials = cat(2,nTrials,exper.nTrials.(conds{icond}));
 end
-badInd = sum(nTrials==0,2);
+%badInd = sum(nTrials<20,2);
 %also remove sub20 for no behav data
-%badInd(strcmp(exper.subjects,'ENT_20')) = 1;
+badInd(~strcmp(exper.subjects,'DeEv_sub02')) = 1;
 
 exper = nk_rmSubs(exper,badInd);
 
 %%
 %define trials of interest
 ana.eventValues = {{'OL','CL'}};
+ana.eventValues = {exper.eventValues};
 
 %load data into ft data struct
 %[data_pow,exper] = mm_loadSubjectData(exper,dirs,ana,'pow',keeptrials,'trialinfo',false);
