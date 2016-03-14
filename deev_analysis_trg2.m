@@ -19,7 +19,7 @@ for icond = 1:length(conds)
 end
 %badInd = sum(nTrials<20,2);
 %also remove sub20 for no behav data
-badInd(~strcmp(exper.subjects,'DeEv_sub02')) = 1;
+badInd(~strcmp(exper.subjects,'DeEv_sub11')) = 1;
 
 exper = nk_rmSubs(exper,badInd);
 
@@ -37,8 +37,8 @@ cfg.loadMethod = 'seg';
 cfg.latency = 'all';
 cfg.frequency = 'all';
 
-%cfg.keeptrials = 'no';
-cfg.keeptrials = 'yes';
+cfg.keeptrials = 'no';
+%cfg.keeptrials = 'yes';
 cfg.equatetrials = 'no';
 % %cfg.equatetrials = 'yes';
 
@@ -153,7 +153,7 @@ cfg_ft.xlim = [-1 2];
 %cfg_ft.ylim = [5.8 6.2];
 %cfg_ft.ylim = [9.8 10.2];
 %cfg_ft.ylim = [19.8 20.2];
-cfg_ft.ylim = [3 30];
+%cfg_ft.ylim = [3 30];
 %cfg_ft.ylim = [3 8];
 %cfg_ft.ylim = [8 12];
 %cfg_ft.ylim = [12 28];
@@ -167,7 +167,7 @@ cfg_ft.showlabels = 'yes';
 cfg_ft.colorbar = 'yes';
 cfg_ft.interactive = 'yes';
 cfg_ft.layout = ft_prepare_layout([],ana);
-cfg_ft.channel = ana.elecGroups{ismember(ana.elecGroupsStr,'PS2')};
+%cfg_ft.channel = ana.elecGroups{ismember(ana.elecGroupsStr,'PS2')};
 
 for ses = 1:length(ana.eventValues)
 

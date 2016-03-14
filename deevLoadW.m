@@ -81,14 +81,14 @@ for icond = 1:length(conds)
         %find trials where this element is the non-target
         
         %compare ol and cl on retrieval trials of this condition
-        wfile.(cond).olscore_crct = max(wfile.(cond).olsim(olretind & olcrct,:),[],2);
-        wfile.(cond).olscore_incrct = max(wfile.(cond).olsim(olretind & ~olcrct,:),[],2);
+        wfile.(cond).olscore_crct = wfile.(cond).olsim(olretind & olcrct,:);
+        wfile.(cond).olscore_incrct = wfile.(cond).olsim(olretind & ~olcrct,:);
         
-        wfile.(cond).clscore_crct = max(wfile.(cond).clsim(clretind & clcrct,:),[],2);
-        wfile.(cond).clscore_incrct = max(wfile.(cond).clsim(clretind & ~clcrct,:),[],2);
+        wfile.(cond).clscore_crct = wfile.(cond).clsim(clretind & clcrct,:);
+        wfile.(cond).clscore_incrct = wfile.(cond).clsim(clretind & ~clcrct,:);
         
-        wfile.(cond).olscore = max(wfile.(cond).olsim(olretind,:),[],2);
-        wfile.(cond).clscore = max(wfile.(cond).clsim(clretind,:),[],2);
+        wfile.(cond).olscore = wfile.(cond).olsim(olretind,:);
+        wfile.(cond).clscore = wfile.(cond).clsim(clretind,:);
         
         if doplots
             e = 0:.01:1;
