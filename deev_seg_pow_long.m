@@ -8,6 +8,7 @@ function deev_seg_pow_long(subs,cfg_in)
 %       cfg.repair = bool, look for bad channels? (def:0)
 %       cfg.interactive = bool, interactive artifcat rejection? (def:0)
 %       cfg.ica = bool, run ICA artifact detection (def:0)
+%       cfg.icaRej = int(vec), components to reject based on prior run
 %
 % outputs data files per condition and subject in the deev dirs, also
 % alters(or creates) ana, exper structs with new subject data
@@ -19,6 +20,7 @@ if ~exist('cfg_in','var'),              cfg_in = [];                    end
 if ~isfield(cfg_in,'repair'),           cfg_in.repair = 0;              end
 if ~isfield(cfg_in,'interactive'),      cfg_in.interactive = 0;         end
 if ~isfield(cfg_in,'ica'),              cfg_in.ica = 1;                 end
+%no deafult for icaRej
 
 %segment netstation mff files and create time-frequency data for each
 %subject
@@ -44,13 +46,15 @@ exper.eegFileExt = 'mff';
 % types of events to find in the NS file; these must be the same as the
 % events in the NS files; or space_trialfun.m must be set up to find the
 % corrct events
-exper.eventValues = {'OL','CL','encLoc','encPer','encObj','encAni','encNotLoc','encNotPer','encNotObj','encNotAni'};
+%exper.eventValues = {'OL','CL','encLoc','encPer','encObj','encAni','encNotLoc','encNotPer','encNotObj','encNotAni'};
+exper.eventValues = {'rFix','OL','CL','rlOL','rlCL','Enc'};
 
 % pre- and post-stimulus times to read, in seconds (pre is negative).
 % Construct as a cell with one Nx2 matrix per session where N is
 % length(exper.eventValues{ses}) Order must correspond to the event order
 % in exper.eventValues.
-exper.prepost = {repmat([-1.0 6],length(exper.eventValues),1)};
+%exper.prepost = {repmat([-1.0 7],length(exper.eventValues),1)};
+exper.prepost = {[-1 1;-1 4; -1 4; -4 1; -4 1; -1 4]};
 
 if ~iscell(subs)
     subs = {subs};
@@ -120,7 +124,7 @@ cd([dirs.dataroot '/../FTgit/external/egi_mff/'])
 mff_setup
 cd(mydir);
 
-ana.offsetMS = -1; %due to anti-aliasing, auto calculated in deev_trialfun
+ana.offsetMS = -1; %due to anti-aliasing, auto calculated in deev_trialfun_mff based on meta data
 ana.offsetMSTCP = 12; %offset due to tcp delay (average based on timing tests)
 
 ana.continuous = 'yes';
@@ -169,19 +173,14 @@ if ana.useExpInfo
   for ityp = 1:length(exper.eventValues)
       ana.trl_order.(exper.eventValues{ityp}) = tmp;
   end
-%  ana.trl_order.OL = tmp;
-%  ana.trl_order.CL = tmp;
-%  ana.trl_order.encLoc = tmp;
-%  ana.trl_order.encPer = tmp;
-%  ana.trl_order.encObj = tmp;
-%  ana.trl_order.encAni = tmp;
+
 end
 
 
 % process the data after segmentation?
 ana.ftFxn = 'ft_freqanalysis';
 % ftype is a string used in naming the saved files (data_FTYPE_EVENT.mat)
-ana.ftype = 'pow';
+ana.ftype = 'fourier';
 ana.overwrite.raw = 1;
 ana.overwrite.proc = 1;
 
@@ -190,12 +189,11 @@ cfg_proc = [];
 cfg_proc.method = 'wavelet';
 cfg_proc.width = 4;
 %cfg_proc.toi = -0.8:0.04:3.0;
-cfg_proc.toi = -1.0:0.04:6.0;
+cfg_proc.toi = -4.0:0.04:4.0;
 % evenly spaced frequencies, but not as many as foilim makes
 freqstep = (exper.sampleRate./(diff(exper.prepost{1}')*exper.sampleRate)) * 2;
-%cfg_proc.foi = 3:freqstep:50;
 cfg_proc.foi = 3:freqstep:50;
-cfg_proc.output = 'pow';
+cfg_proc.output = 'fourier';
 
 
 
@@ -207,7 +205,7 @@ cfg_pp.refchannel = 'all';
 cfg_pp.implicitref = exper.refChan;
 % do a baseline correction
 cfg_pp.demean = 'yes';
-cfg_pp.baselinewindow = [-0.2 0];
+%cfg_pp.baselinewindow = [-0.2 0];
 
 
 % preprocess continuous data in these ways
@@ -220,7 +218,7 @@ ana.cfg_cont.hpfiltord = 4;
 ana.cfg_cont.bsfilter = 'yes';
 ana.cfg_cont.bsfreq = [59 61];
 
-ana.artifact.continuousRepair = (cfg_in.repair && ~cfg_in.ica);
+ana.artifact.continuousRepair = cfg_in.repair;
 ana.artifact.continuousReject = cfg_in.ica;
 ana.artifact.continuousICA = cfg_in.ica;
 
@@ -235,9 +233,13 @@ if cfg_in.interactive
 else
     ana.artifact.interactive = 'no';    
 end
+
+ana.artifact.autonomous = false; %no gui diolgs
 % ana.artifact.resumeManArtFT = false;
 ana.artifact.resumeManArtContinuous = true;
+%ana.artifact.resumeICACompContinuous = true;
 ana.artifact.resumeICACompContinuous = true;
+if isfield(cfg_in,'icaRej'), ana.artifact.resumeICACompRej = cfg_in.icaRej;     end
 % negative trlpadding: don't check that time (on both sides) for artifacts.
 % IMPORTANT: Not used for threshold artifacts. only use if segmenting a lot
 % of extra time around trial epochs. Otherwise set to zero.
@@ -246,19 +248,20 @@ ana.artifact.artpadding = 0.1;
 ana.artifact.fltpadding = 0;
 
 % set up for ftAuto after continuous ICA rejection
+ana.artifact.reRef = 1;%post-ICA re-reference if flatRef 
 ana.artifact.checkAllChan = true;
 ana.artifact.thresh = true;
 ana.artifact.threshmin = -200;
 ana.artifact.threshmax = 200;
-ana.artifact.threshrange = 400;
+ana.artifact.threshrange = 200;
 ana.artifact.basic_art = true;
-ana.artifact.basic_art_z = 30;
+ana.artifact.basic_art_z = 20;
 ana.artifact.jump_art = true;
-ana.artifact.jump_art_z = 80;
+ana.artifact.jump_art_z = 50;
 
 % eog_art is only used with ftAuto
-ana.artifact.eog_art = false;
-ana.artifact.eog_art_z = 5;
+ana.artifact.eog_art = true;
+ana.artifact.eog_art_z = 20;
 
 % single precision to save space
 cfg_pp.precision = 'single';
@@ -266,7 +269,7 @@ cfg_pp.precision = 'single';
 cfg_proc.keeptrials = 'yes';
 
 % set the save directories
-[dirs,files] = mm_ft_setSaveDirs(exper,ana,cfg_proc,dirs,files,'pow');
+[dirs,files] = mm_ft_setSaveDirs(exper,ana,cfg_proc,dirs,files,'tfr');
 
 % create the raw and processed structs for each sub, ses, & event value
 [exper] = create_ft_struct(ana,cfg_pp,exper,dirs,files);

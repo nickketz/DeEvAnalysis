@@ -26,15 +26,16 @@ l = min(f); u = max(f);
 tdur = t(end)-t(1);
 fdur = f(end)-f(1);
 
-tsel = data.time>=s & data.time<=s+tdur;
-fsel = data.freq>=l & data.freq<=l+fdur;
+tsel = data.time>=s & data.time<=e;
+fsel = data.freq>=l & data.freq<=u;
 
 if sum(data.time(tsel)~=t)>0 || sum(data.freq(fsel)~=f)>0
     error('selected time/freq dimensions don''t match optimal');
 end
 
 %compare tempalte with observations
-nsamp = floor(max(data.time-tdur)/slide);
+slide = slide+mod(slide,diff(data.time(1:2))); %make slide divisible by time grains
+nsamp = floor((diff(data.time(1:2))*length(data.time)-tdur)/slide);
 ntrials = size(data.trialinfo,1);
 sim = nan(ntrials,nsamp);
 fsamp = fsel;

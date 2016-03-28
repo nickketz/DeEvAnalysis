@@ -86,7 +86,7 @@ if cfg.eventinfo.useMetadata
 end
 
 %define triggers to look into
-triggers = {'WRD1','TRG2'};
+triggers = {'WRD1','TRG2','CNF2','FIX2'};
 if cfg.eventinfo.usePhotodiodeDIN
     triggers = cat(2,triggers,cfg.eventinfo.photodiodeDIN_str);
     %cfg.trialdef.eventtype = cat(2, cfg.trialdef.eventtype, cfg.eventinfo.photodiodeDIN_str);
@@ -191,11 +191,11 @@ for i = 1:length(ft_event)
                 stimtypes = {'encLoc','encPer','encObj','encAni'}; 
                 notstimtypes = {'encNotLoc','encNotPer','encNotObj','encNotAni'};
                 evVal = stimtypes(cellfun(@str2num,ordn));
-                evVal = cat(2,evVal,notstimtypes(~ismember(stimtypes,evVal)));
-
+                evVal = cat(2,evVal,notstimtypes(~ismember(stimtypes,evVal)),'Enc');
+                
             case 'TRG2'
                 keeptrial = 1;
-                %retrieval trials
+                %stimulus locked retrieval trials
                 
                 %is this OL or CL?
                 cols.cond = find(strcmp(ns_evt_cols,'sttp'));
@@ -205,8 +205,33 @@ for i = 1:length(ft_event)
                 
                 sttp = ft_event(i).orig.keys(cols.cond).key.data.data;
                 evVal = {sprintf(sttp)};
+                
+                
+            case {'CNF2'}
+                keeptrial = 1;
+                %response locked retrieval trials
+                
+                %is this OL or CL?
+                cols.cond = find(strcmp(ns_evt_cols,'sttp'));
+                if isempty(cols.cond)
+                    error('could not find stim type column to determine condition')
+                end
+                
+                sttp = ft_event(i).orig.keys(cols.cond).key.data.data;
+                evVal = {sprintf('rl%s',sttp)};
+                                
+            case {'FIX2'}
+                keeptrial = 1;
+                %retrieval fixation
+                
+                evVal = {sprintf('rFix')};
                                 
         end %switch
+        %is this event in the list of conditions to keep?
+        [logevNum,locevVal] = ismember(cfg.trialdef.eventvalue,evVal);
+        eventNumber = find(logevNum); 
+        evVal = evVal(locevVal(logevNum));
+        if isempty(eventNumber), keeptrial = 0; end
         
         if keeptrial
             
