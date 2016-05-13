@@ -1,4 +1,4 @@
-function out = deevSelEnet(substr,selmeas)
+function out = deevSelEnet(substr,cfg)
 %function to select best performing elastic net per subject
 % returns struct with predictions and evalutions 
 % last dimension is 1:max diff 2:mean
@@ -11,25 +11,20 @@ function out = deevSelEnet(substr,selmeas)
 %   out: struct with performance and selected predictions
 %
 
-if ~exist('selmeas','var'),             selmeas = 'dprime';             end
+if ~exist('cfg','var'),             cfg = [];                           end
+if ~isfield(cfg,'selmeas')          cfg.selmeas = 'dprime';             end
+if ~isfield(cfg,'slide')            cfg.slide = 2;                      end
+if ~isfield(cfg,'tlen')             cfg.tlen = 5;                       end
+if ~isfield(cfg,'doplots')          cfg.doplots = 0;                    end
+if ~isfield(cfg,'adFile')           cfg.adFile = '/home/nike3851/work/DeEv_EEG/analysis/data/DEEV/EEG/Sessions/v1/ft_data/OL_CL_encLoc_encPer_encObj_encAni_encNotLoc_encNotPer_encNotObj_encNotAni_eq0_art_ftAuto/pow_wavelet_w4_pow_3_50/analysisDetails.mat'; end
 
-doplots = 0;
-adFile = '/home/nike3851/work/DeEv_EEG/analysis/data/DEEV/EEG/Sessions/v1/ft_data/OL_CL_encLoc_encPer_encObj_encAni_encNotLoc_encNotPer_encNotObj_encNotAni_eq0_art_ftAuto/pow_wavelet_w4_pow_3_50/analysisDetails.mat';
+
+selmeas = cfg.selmeas; tslide = cfg.slide; tlen = cfg.tlen; doplots = cfg.doplots; adFile = cfg.adFile;
+
 load(adFile);
-
 savedir = fullfile(dirs.saveDirProc,substr,'ses1');
-
 conds = {'encLoc','encPer','encObj','encAni'};
 
-tlen = 5; tslide = 2;
-tmin = -.08; tmax = 1.96; tdiff = .04; tdur = ((tmax-(tlen*tdiff))-tmin);
-nslide = 1 + tdur/(tslide*tdiff);
-t = tmin:tslide*tdiff:tmax-(tlen*tdiff);
-t = cat(1,t,t+tlen*tdiff);
-nconds = length(conds);
-auc = nan(nslide,nconds,2); dp = nan(nslide,nconds,2); h = dp; fa = dp;%maxp x meanp
-b = cell(4,2); fit = b;
-tsel = nan(4,2,2); msel = nan(4,2);
 
 if doplots
     hfig = figure('color','white');
@@ -39,6 +34,18 @@ for icond = 1:length(conds)
     fprintf('\neval %s...',conds{icond});
     fname = sprintf('Enet_%s_%dtlen_%dtslide.mat',conds{icond},tlen,tslide);
     in = load(fullfile(savedir,fname));
+        
+    tmin = in.t(1); tmax = in.t(2); tdiff = .04; tdur = ((tmax-(tlen*tdiff))-tmin);
+    nslide = size(in.fit,1);
+    t = tmin:tslide*tdiff:tmax-tdiff;
+    t = cat(1,t,t+tlen*tdiff);
+    nconds = length(conds);
+    if ~exist('auc','var')
+        auc = nan(nslide,nconds,2); dp = nan(nslide,nconds,2); h = dp; fa = dp;%maxp x meanp
+        b = cell(4,2); fit = b;
+        tsel = nan(4,2,2); msel = nan(4,2);
+    end
+
     
     l = in.test_lbl(:,icond);
     if icond == 1, p = nan([size(in.test_lbl),2]); end

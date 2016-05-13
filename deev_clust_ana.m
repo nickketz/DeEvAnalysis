@@ -15,23 +15,26 @@ cfg_ft.parameter = 'powspctrm';
 %cfg_ft.numrandomization = 5000;
 
 cfg_ft.numrandomization = 500;
-cfg_ft.clusteralpha = .05;
+cfg_ft.clusteralpha = .1;
 cfg_ft.alpha = .1;
 cfg_ft.neighbors = ft_prepare_neighbours(struct('elecfile',files.elecfile,'method','distance'));
 %cfg_ft.minnbchan = 2;
 
 cfg_ana = [];
 %cfg_ana.conditions = {'tblrlCLrtcrt','tblrlOLrtcrt'}; s = -3; e = -.5;
-cfg_ana.conditions = {'tblCLrtcrt','tblOLrtcrt'}; s = .5; e = 3;
+%cfg_ana.conditions = {'tblCLrtcrt','tblOLrtcrt'}; s = .5; e = 3;
+%cfg_ana.conditions = {'tblrlRetrthcf','tblrlRetrtlcf'}; s = -3; e = -.5;
+cfg_ana.conditions = {'SLvarOL','SLvarCL'}; s = 0; e = 3; %SL
+%cfg_ana.conditions = {'RLvarOL','RLvarCL'}; s = -3; e = 0; %RL
 
-wind = 2.5; int = .5; t = [s:int:e-wind]';
+wind = 3; int = .5; t = [s:int:e-wind]';
 for i = 1:length(t) t(i,2) = t(i,1)+wind; end
 cfg_ana.latencies = t;
 
 f = mm_freqSet('ndtools');
 cfg_ana.frequencies = [f.theta;f.alpha;f.beta];
 
-%cfg_ana.frequencies = [f.theta];
+%cfg_ana.frequencies = [3 50];
 %cfg_ana.latencies = [-3 -2];
 
 cfg_plot = [];
@@ -44,7 +47,7 @@ for lat = 1:size(cfg_ana.latencies,1)
     for fr = 1:size(cfg_ana.frequencies,1)
         cfg_ft.frequency = cfg_ana.frequencies(fr,:);
         
-        %[stat_clus] = mm_ft_clusterstatTFR(cfg_ft,cfg_ana,exper,ana,dirs,data_pow);
+        [stat_clus] = mm_ft_clusterstatTFR(cfg_ft,cfg_ana,exper,ana,dirs,data_pow);
         %
                 mydir = fullfile(dirs.saveDirProc,...
                     ['tfr_stat_clus_' ...
@@ -75,7 +78,7 @@ cfg_plot.latency = cfg_ft.latency;
 files.saveFigs = 1;
 files.figPrintFormat = 'pdf';
 %cfg_ft = [];
-%cfg_ft.alpha = .12;
+cfg_ft.alpha = .13;
 
 cfg_plot = [];
 cfg_plot.conditions = cfg_ana.conditions;

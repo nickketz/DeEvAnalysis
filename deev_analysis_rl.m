@@ -88,7 +88,7 @@ ana.trl_expr = {{ {'sttp==1', 'sttp==2'} {'sttp==1 | sttp==2'} ... %{'rFix_OL','
 %ana.eventValues = {{'OL','CL'}};
 %ana.eventValues = {exper.eventValues};
 
-cfg = deevLoadConfig;
+cfg = deevLoadzConfig;
 cfg.keeptrials = 'no';
 cfg.ftype = 'fourier';
 cfg.baseline_time = [-.3 -.1];
@@ -139,7 +139,7 @@ blana.trl_expr = {{ {'sttp==1 & crct==1'} ... %{'rlOLrtcrt'}
                     {'sttp==1 | sttp==2'}; 
                  }};     
 blana.trl_order = ana.trl_order;
-inana(1) = blana;
+inana{1} = blana;
 
 blana = [];
 blana.eventValues = {{'rlCL','CL'}};
@@ -149,7 +149,7 @@ blana.trl_expr = {{
                     {'sttp==1 | sttp==2'}; 
                  }};        
 blana.trl_order = ana.trl_order;             
-inana(2) = blana;
+inana{2} = blana;
 
 blana = [];
 blana.eventValues = {{'rlOL','OL'}};
@@ -158,7 +158,7 @@ blana.trl_expr = {{ {'sttp==1'} ... %{'rlOLrtcrt'}
                     {'sttp==1 | sttp==2'}; 
                  }};     
 blana.trl_order = ana.trl_order;
-inana(3) = blana;
+inana{3} = blana;
 
 blana = [];
 blana.eventValues = {{'rlCL','CL'}};
@@ -168,7 +168,7 @@ blana.trl_expr = {{
                     {'sttp==1 | sttp==2'}; 
                  }};        
 blana.trl_order = ana.trl_order;
-inana(4) = blana;
+inana{4} = blana;
 
 blana = [];
 blana.eventValues = {{'OL','OL'}};
@@ -178,7 +178,7 @@ blana.trl_expr = {{
                     {'sttp==1 | sttp==2'}; 
                  }};        
 blana.trl_order = ana.trl_order;
-inana(5) = blana;
+inana{5} = blana;
 
 blana = [];
 blana.eventValues = {{'CL','CL'}};
@@ -188,7 +188,7 @@ blana.trl_expr = {{
                     {'sttp==1 | sttp==2'}; 
                  }};        
 blana.trl_order = ana.trl_order;
-inana(6) = blana;
+inana{6} = blana;
 
 blana = [];
 blana.eventValues = {{'OL','OL'}};
@@ -198,7 +198,7 @@ blana.trl_expr = {{
                     {'sttp==1 | sttp==2'}; 
                  }};        
 blana.trl_order = ana.trl_order;
-inana(7) = blana;
+inana{7} = blana;
 
 blana = [];
 blana.eventValues = {{'CL','CL'}};
@@ -208,41 +208,43 @@ blana.trl_expr = {{
                     {'sttp==1 | sttp==2'}; 
                  }};        
 blana.trl_order = ana.trl_order;
-inana(8) = blana;
+inana{8} = blana;
 
-% %high vs. low conf
-% blana = [];
-% blana.eventValues = {{'rlOL','rlCL','OL'}};
-% blana.eventValuesSplit = {{ {'rlOLrthcf'} {'rlCLrthcf'} {'rFix'} }};
-% blana.trl_expr = {{ 
-%                     {'sttp==1 & conf>2'} ... %{'rlCLrtcrt'}  
-%                     {'sttp==1 & conf>2'} ...
-%                     {'sttp==1 | sttp==2'}; 
-%                  }};        
-% blana.eventValuesComb = {{ {'rlOLrthcf', 'rlCLrthcf'} }};
-% blana.eventValuesNew = {{ 'rlRetrthcf' }};             
-% blana.trl_order = ana.trl_order;
-% inana(9) = blana;
-% 
-% blana = [];
-% blana.eventValues = {{'rlOL','rlCL','CL'}};
-% blana.eventValuesSplit = {{ {'rlOLrtlcf'} {'rlCLrtlcf'} {'rFix'} }};
-% blana.trl_expr = {{ 
-%                     {'sttp==2 & conf<3'} ... %{'rlCLrtcrt'}  
-%                     {'sttp==2 & conf<3'} ...
-%                     {'sttp==1 | sttp==2'}; 
-%                  }};        
-% blana.eventValuesComb = {{ {'rlOLrtlcf', 'rlCLrtlcf'} }};
-% blana.eventValuesNew = {{ 'rlRetrtlcf' }};
-% blana.trl_order = ana.trl_order;
-% inana(10) = blana;
+%high vs. low conf
+blana = [];
+blana.eventValues = {{'rlOL','rlCL','OL','CL'}};
+blana.eventValuesSplit = {{ {'rlOLrthcf'} {'rlCLrthcf'} {'OL'} {'CL'} }};
+blana.trl_expr = {{ 
+                    {'sttp==1 & conf>2 & crct==1'} ... 
+                    {'sttp==2 & conf>2 & crct==1'} ...
+                    {'sttp==1'}...
+                    {'sttp==2'}...
+                 }};        
+blana.eventValuesComb = {{ {'rlOLrthcf', 'rlCLrthcf'} {'OL','CL'}}};
+blana.eventValuesNew = {{ 'rlRetrthcfcrct', 'rFix' }};             
+blana.trl_order = ana.trl_order;
+inana{9} = blana;
+
+blana = [];
+blana.eventValues = {{'rlOL','rlCL','OL','CL'}};
+blana.eventValuesSplit = {{ {'rlOLrtlcf'} {'rlCLrtlcf'} {'OL'} {'CL'}}};
+blana.trl_expr = {{ 
+                    {'sttp==1 & conf<3 & crct==1'} ... 
+                    {'sttp==2 & conf<3 & crct==1'} ...
+                    {'sttp==1'}...
+                    {'sttp==2'}...
+                 }};        
+blana.eventValuesComb = {{ {'rlOLrtlcf', 'rlCLrtlcf'} {'OL','CL'} }};
+blana.eventValuesNew = {{ 'rlRetrtlcfcrct', 'rFix' }};
+blana.trl_order = ana.trl_order;
+inana{10} = blana;
 
 
 % rest of defs
 
 cfg_bl = [];
 
-trgCond = {'rlOLrtcrt','rlCLrtcrt','rlOLrt','rlCLrt','OLrt','CLrt','OLrtcrt','CLrtcrt'};      
+trgCond = {'rlOLrtcrt','rlCLrtcrt','rlOLrt','rlCLrt','OLrt','CLrt','OLrtcrt','CLrtcrt','rlRetrthcfcrct','rlRetrtlcfcrct'};
 blCond = repmat({'rFix'},size(trgCond));
 
 cfg_bl.loadcfg = deevLoadConfig;
@@ -250,7 +252,7 @@ cfg_bl.loadcfg.ftype = 'fourier';
 cfg_bl.loadcfg.loadMethod = 'trialinfo';
 cfg_bl.loadcfg.keeptrials = 'yes';
 cfg_bl.loadcfg.baseline_type = '';
-cfg_bl.loadcfg.norm_trial = 'average';
+cfg_bl.loadcfg.norm_trials = 'average'; %watch out for 'norm_trial' gotcha
 cfg_bl.loadcfg.baseline_time = [];
 
 cfg_bl.keeptrials = 'no';
@@ -267,7 +269,7 @@ for icond = 9:10%length(trgCond)
     cfg_bl.blCond = blCond{icond};
     cfg_bl.trgCond = trgCond{icond};
     
-    [bldata, exper] = deevTrialBL(exper,dirs,inana(icond),cfg_bl);
+    [bldata, exper] = deevTrialBL(exper,dirs,inana{icond},cfg_bl);
     data_pow.ses1.(['tbl' cfg_bl.trgCond]) = bldata;
 end
 %add new cond to eventValues
@@ -281,7 +283,6 @@ ana.eventValues = {ana.eventValues{1}(ind)};
 %cond baseline
 conds = fieldnames(exper.nTrials.ses1);
 nTrials = [];
-nthres = 20;
 for icond = 1:length(conds)
     nTrials = cat(2,nTrials,exper.nTrials.ses1.(conds{icond}));
 end
@@ -290,7 +291,6 @@ end
 conds = fieldnames(exper.nTrials);
 %conds = {'OL','CL'};
 nTrials = [];
-
 for icond = 1:length(conds)
     nTrials = cat(2,nTrials,exper.nTrials.(conds{icond}));
 end
@@ -417,11 +417,12 @@ cfg_plot.zlabel = 'relchange power';
 % Type of plot
 %%%%%%%%%%%%%%%
 
-cfg_plot.conditions = {{'tblCLrtcrt','tblOLrtcrt'}};
+%cfg_plot.conditions = {{'tblrlRetrthcf','tblrlRetrtlcf'}};
+cfg_plot.conditions = {{'varOL','varCL'}};
 %cfg_plot.conditions = {{'tblrlCLrtcrt','tblrlOLrtcrt'}};
 %cfg_plot.conditions = {{'CL','OL'}};
 cfg_plot.ftFxn = 'ft_singleplotTFR';
-cfg_plot.roi = {'FS'};
+cfg_plot.roi = {'noEyeABH'};
 %cfg_plot.ftFxn = 'ft_topoplotTFR';
 cfg_ft.marker = 'off';
 cfg_ft.comment = 'no';
@@ -431,7 +432,7 @@ cfg_plot.plotTitel = 0;
 cfg_ft.ylim = [3 50]; %freq
 %cfg_ft.avgovertime = 'yes';
 %cfg_ft.xlim = (-3:0.5:0); % time
-cfg_ft.xlim = [-.3 3]; % time
+%cfg_ft.xlim = [-.3 3]; % time
 
 
 %cfg_plot.ftFxn = 'ft_multiplotTFR';

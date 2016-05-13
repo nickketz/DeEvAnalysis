@@ -42,15 +42,25 @@ for isub = 1:length(exper.subjects)
         continue
     end
     
-%     if isfield(ana,'eventValuesComb')
-%         cfg_appnd = []; cfg_appnd.parameter = 'pwspctrm'; cfg_appnd.appenddim = 'trial';
-%         for icmb = 1:length(ana.eventValuesComb)
-%             cmbstr = 
-%             cmbdata = ft_appendfreq(cfg_appnd,indata.(exper.sesStr{1}).(ana.eventValuesComb{1}).sub.data;
+    if isfield(ana,'eventValuesComb')
+        cfg_appnd = []; cfg_appnd.parameter = cfg.param; cfg_appnd.appenddim = 'rpt';
+        for ises = 1:length(ana.eventValuesComb)
+            for inew = 1:length(ana.eventValuesNew{ises})
+                cmbstr = '';
+                for icmb = 1:length(ana.eventValuesComb{ises}{inew})
+                    cmbstr = sprintf('%s, indata.%s.%s.sub.data',cmbstr,exper.sesStr{1},ana.eventValuesComb{ises}{inew}{icmb});
+                end
+                eval(['cmbdata = ft_appendfreq(cfg_appnd' cmbstr ');']);
+                indata.(exper.sesStr{1}) = rmfield(indata.(exper.sesStr{1}),ana.eventValuesComb{ises}{inew});
+                indata.(exper.sesStr{1}).(ana.eventValuesNew{ises}{inew}).sub.data = cmbdata;
+            end
+        end
+    end
+                
 
     bldata = indata.(exper.sesStr{1}).(cfg.blCond).sub.data;
     trgdata = indata.(exper.sesStr{1}).(cfg.trgCond).sub.data;
-    clear indata;
+    clear indata cmbdata;
     
     %find matching trials and sort bl to correspond to trg
     [blintrg, trginbl] = ismember(bldata.trialinfo(:,cfg.colinds),trgdata.trialinfo(:,cfg.colinds),'rows');
