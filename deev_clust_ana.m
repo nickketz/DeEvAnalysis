@@ -21,10 +21,11 @@ cfg_ft.neighbors = ft_prepare_neighbours(struct('elecfile',files.elecfile,'metho
 %cfg_ft.minnbchan = 2;
 
 cfg_ana = [];
-%cfg_ana.conditions = {'tblrlCLrtcrt','tblrlOLrtcrt'}; s = -3; e = -.5;
-%cfg_ana.conditions = {'tblCLrtcrt','tblOLrtcrt'}; s = .5; e = 3;
+cfg_ana.conditions = {'tblrlCLrtcrt','tblrlOLrtcrt'}; s = -3.5; e = -.5;
+%cfg_ana.conditions = {'tblCLrtcrt','tblOLrtcrt'}; s = 0; e = 3;
+%cfg_ana.conditions = {'tblCLrt','tblOLrt'}; s = 0; e = 3;
 %cfg_ana.conditions = {'tblrlRetrthcf','tblrlRetrtlcf'}; s = -3; e = -.5;
-cfg_ana.conditions = {'SLvarOL','SLvarCL'}; s = 0; e = 3; %SL
+%cfg_ana.conditions = {'SLvarOL','SLvarCL'}; s = 0; e = 3; %SL
 %cfg_ana.conditions = {'RLvarOL','RLvarCL'}; s = -3; e = 0; %RL
 
 wind = 3; int = .5; t = [s:int:e-wind]';
@@ -47,6 +48,7 @@ for lat = 1:size(cfg_ana.latencies,1)
     for fr = 1:size(cfg_ana.frequencies,1)
         cfg_ft.frequency = cfg_ana.frequencies(fr,:);
         
+        fprintf('\n\n-------\nRunning f=%.02fto%.02f, t=%.02fto%.02f\n-------\n\n',cfg_ft.frequency(1),cfg_ft.frequency(2),cfg_ft.latency(1),cfg_ft.latency(2));
         [stat_clus] = mm_ft_clusterstatTFR(cfg_ft,cfg_ana,exper,ana,dirs,data_pow);
         %
                 mydir = fullfile(dirs.saveDirProc,...

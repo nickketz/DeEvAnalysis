@@ -239,7 +239,7 @@ for icond = 1:length(conds)
     maxp = nan(length(l),length(tstart));
     maxt = nan(length(l),length(tstart));
     meanp = maxp;
-    maxauc = nan(length(tstart),length(tstart));
+    maxauc = nan(length(tstart),1);
     meanauc = maxauc;
     maxdp = maxauc;
     meandp = maxauc;
@@ -254,8 +254,9 @@ for icond = 1:length(conds)
         [b{i},fit{i}] = lassoglm(x,y,'binomial','alpha',.9,'Options',opts,'NumLambda',10,'CV',10);
         [~,icol] = min(fit{i}.Deviance);
         trainp = 1./(1+exp(-(fit{i}.Intercept(icol)+b{i}(:,icol)'*x')));
-        trainerr = sum((trainp'-y).^2)^.5/length(y);
-        fprintf('\ntrain error: binary:%.2f norm:%.04f',mean(abs(round(trainp')-y)),trainerr);
+        tp = trainp*y; fp = trainp*(1-y); fn = (1-trainp)*y; tn = (1-trainp)*(1-y);
+        trainerr = 1-(tp+tn)/(tp+tn+fp+fn);
+        fprintf('\ntrain error: binary:%.2f norm:%.04f',mean(abs(round(trainp)'-y)),trainerr);
 
         p = nan(length(l),length(tstart_test));
         for j = 1:length(tstart_test)
@@ -269,25 +270,30 @@ for icond = 1:length(conds)
         %do max diff       
         [~,maxt(:,i)] = nanmax(abs(p-(1-p)),[],2);
         for ip = 1:size(maxt,1), maxp(ip,i) = p(ip,maxt(ip,i)); end
-        [~,~,~,maxauc(i,j)] = perfcurve(l,maxp(:,i),1);
-        binvar = round(maxp(:,i));
-        hit = sum(binvar==1 & l==1)/sum(l==1);
-        fa = sum(binvar==1 & l==0)/sum(l==0);
-        err = mean(abs(l-binvar));
-        maxdp(i,j) = norminv(hit)-norminv(fa);
-        fprintf('\nmaxeval: auc %.02f; err %.02f; hit %.02f; fa %.02f; dprime %.02f ',...
-            maxauc(i,j),err,hit,fa,maxdp(i,j));
+        [~,~,~,maxauc(i)] = perfcurve(l,maxp(:,i),1);
+        binvar = maxp(:,i);%round(maxp(:,i));
+        hit = binvar'*l;%sum(binvar==1 & l==1)/sum(l==1);
+        fa = (1-binvar)'*l;%sum(binvar==1 & l==0)/sum(l==0);
+        fn = binvar'*(1-l);
+        tn = (1-binvar)'*(1-l);
+        err = 1-(hit+tn)/(hit+tn+fp+fn);%mean(abs(l-binvar));
+        maxdp(i) = norminv(sum((binvar.*l)>.5)/sum(l)) - norminv(sum((binvar.*(1-l))>.5)/sum(1-l));
+        fprintf('\nmaxeval: auc %.02f; err %.02f; prec %.02f; recall %.02f; dprime %.02f ',...
+            maxauc(i),err,hit/(hit+fa),hit/(hit+fn),maxdp(i));
         maxt(:,i) = test_time(maxt(:,i));
         
         %do mean
         meanp(:,i) = nanmean(p,2);
-        [~,~,~,meanauc(i,j)] = perfcurve(l,meanp(:,i),1);
-        binvar = round(meanp(:,i));
-        hit = sum(binvar==1 & l==1)/sum(l==1);
-        fa = sum(binvar==1 & l==0)/sum(l==0);
-        meandp(i,j) = norminv(hit)-norminv(fa);
+        [~,~,~,meanauc(i)] = perfcurve(l,meanp(:,i),1);
+        binvar = meanp(:,i);%round(meanp(:,i));
+        hit = binvar'*l;%sum(binvar==1 & l==1)/sum(l==1);
+        fa = (1-binvar)'*l;%sum(binvar==1 & l==0)/sum(l==0);
+        fn = binvar'*(1-l);
+        tn = (1-binvar)'*(1-l);
+        err = 1-(hit+tn)/(hit+tn+fp+fn);%mean(abs(l-binvar));
+        meandp(i) = norminv(sum((binvar.*l)>.5)/sum(l)) - norminv(sum((binvar.*(1-l))>.5)/sum(1-l));
         fprintf('\nmeaneval: auc %.02f; err %.02f; hit %.02f; fa %.02f; dprime %.02f ',...
-            meanauc(i,j),mean(abs(l-round(meanp(:,i)))),hit,fa,meandp(i,j));
+            meanauc(i),err,hit/(hit+fa),hit/(hit+fn),meandp(i));
         
         
     end

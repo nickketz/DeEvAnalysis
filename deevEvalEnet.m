@@ -1,4 +1,4 @@
-function out = deevSelEnet(substr,cfg)
+function out = deevEvalEnet(substr,cfg)
 %function to select best performing elastic net per subject
 % returns struct with predictions and evalutions 
 % last dimension is 1:max diff 2:mean

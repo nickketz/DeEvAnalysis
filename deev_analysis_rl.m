@@ -1,5 +1,5 @@
 %preliminary power analysis to check on flckr condtions
-clear
+%clear
 %load analysis details
 %short pow
 %adFile = '/work/ccnlab/users/nike3851/DeEv_EEG/analysis/data/DEEV/EEG/Sessions/v1/ft_data/OL_CL_encLoc_encPer_encObj_encAni_encNotLoc_encNotPer_encNotObj_encNotAni_eq0_art_ftAuto/pow_wavelet_w4_pow_3_50/analysisDetails.mat';
@@ -263,7 +263,7 @@ cfg_bl.param = 'powspctrm';
 cfg_bl.nullRT = true;
 cfg_bl.bufRT = .3;
 
-for icond = 9:10%length(trgCond)
+for icond = 1:length(trgCond)
     cfg_bl.colinds = true(size(ana.trl_order.rlCL));%they're all the same size anyway
     cfg_bl.colinds(1) = 0; %condn col can't be used in matching
     cfg_bl.blCond = blCond{icond};
@@ -289,15 +289,16 @@ end
 %%
 %trial baseline
 conds = fieldnames(exper.nTrials);
-%conds = {'OL','CL'};
+%conds = {'tblOLrt','tblCLrt'};
 nTrials = [];
 for icond = 1:length(conds)
     nTrials = cat(2,nTrials,exper.nTrials.(conds{icond}));
 end
 %%
 nthres = 20;
-exper.badSub = sum(nTrials<nthres,2)>1;
-
+exper.badSub = sum(nTrials(:,1:end-1)<nthres,2)>0;
+subnum = cellfun(@(x) (str2num(x(end-1:end))),exper.subjects);
+exper.badSub(subnum==37 | subnum==39)=1; %bad subs
 ana = mm_ft_elecGroups(ana);
 
 
@@ -399,6 +400,7 @@ for ses = 1:length(ana.eventValues)
 end
 
 %% plot the contrasts
+files.figPrintFormat = 'pdf';
 
 
 cfg_plot = [];
@@ -418,9 +420,9 @@ cfg_plot.zlabel = 'relchange power';
 %%%%%%%%%%%%%%%
 
 %cfg_plot.conditions = {{'tblrlRetrthcf','tblrlRetrtlcf'}};
-cfg_plot.conditions = {{'varOL','varCL'}};
+cfg_plot.conditions = {{'CL','OL'}};
 %cfg_plot.conditions = {{'tblrlCLrtcrt','tblrlOLrtcrt'}};
-%cfg_plot.conditions = {{'CL','OL'}};
+%cfg_plot.conditions = {{'tblCLrt','tblOLrt'}};
 cfg_plot.ftFxn = 'ft_singleplotTFR';
 cfg_plot.roi = {'noEyeABH'};
 %cfg_plot.ftFxn = 'ft_topoplotTFR';
@@ -443,7 +445,7 @@ mm_ft_contrastTFR(cfg_ft,cfg_plot,ana,exper,files,dirs,ga_pow,1);
 
 %% cluster stat
 
-
+%see deev_clust_ana.m
 
 
 %% line plot
